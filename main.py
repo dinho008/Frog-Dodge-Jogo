@@ -23,12 +23,17 @@ pygame.display.set_caption('Fight in space')
 branco = (255, 255, 255)
 preto = (0, 0, 0)
 
-fundoincial = pygame.image.load("recursos/iniciogame.jpg")
-fundojogo = pygame.image.load("recursos/Imagemjogo.png")
+fundo_incial = pygame.image.load("recursos/iniciogame.jpg")
+fundo_jogo = pygame.image.load("recursos/Imagemjogo.png")
 personagem_img = pygame.image.load("recursos/personagem.png")
 projetil_img = pygame.image.load("recursos/projetil.png")
-projetil_img = pygame.transform.scale(projetil_img, (80, 80))
+inimigo_img = pygame.image.load("recursos/Inimigo.png")
+tela_de_morte = pygame.image.load("recursos/telaDeMorte.png")
 personagem_img = pygame.transform.scale(personagem_img, (100, 100)) 
+projetil_img = pygame.transform.scale(projetil_img, (80, 80))
+inimigo_largura = 300
+inimigo_altura = 300
+inimigo_img = pygame.transform.scale(inimigo_img, (inimigo_largura, inimigo_altura))
 
 fonteMenu = pygame.font.SysFont('comicsans', 24)
 nome = ""
@@ -36,19 +41,35 @@ nome = ""
 def iniciar_jogo():
     personagem_x = largura // 2 - 50
     personagem_y = altura - 150
-    velocidade = 10
+    velocidade = 15
 
     projetil_x = random.randint(0, largura - 80)
     projetil_y = -80
-    velocidade_projetil = 5
-    aumento_velocidade = 0.03
+    velocidade_projetil = 2
+    aumento_velocidade = 0.01
+
+    inimigo_x = largura // 2 - inimigo_largura // 2
+    inimigo_y = 50
 
     rodando = True
+    pausado = False 
+
     while rodando:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_SPACE:
+                    pausado = not pausado
+
+        if pausado:
+            texto_pausa = fonteMenu.render("GAME PAUSED - press space to continue", True, branco)
+            texto_rect = texto_pausa.get_rect(center=(largura // 2, altura // 2))
+            tela.blit(texto_pausa, texto_rect)
+            pygame.display.update()
+            fps.tick(10)
+            continue
 
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_LEFT]:
@@ -67,27 +88,33 @@ def iniciar_jogo():
         if projetil_y > altura:
             projetil_x = random.randint(0, largura - 80)
             projetil_y = -80
-            velocidade_projetil += 0.3
+            velocidade_projetil += 0.01
 
         personagem_rect = pygame.Rect(personagem_x, personagem_y, 100, 100)
-        projetil_rect = pygame.Rect(projetil_x, projetil_y, 80, 80)
+        projetil_rect = pygame.Rect(projetil_x + 15, projetil_y + 15, 50, 50)
 
         if personagem_rect.colliderect(projetil_rect):
             game_over()
 
-        tela.blit(fundojogo, (0, 0))
+        tela.blit(fundo_jogo, (0, 0))
+        tela.blit(inimigo_img, (inimigo_x, inimigo_y)) 
         tela.blit(personagem_img, (personagem_x, personagem_y)) 
         tela.blit(projetil_img, (projetil_x, projetil_y))
+
+        dica_pause = fonteMenu.render("(press space to pause)", True, (180, 180, 180))
+        tela.blit(dica_pause, (10, 10))
+
         pygame.display.update()
         fps.tick(60)
 
 def game_over():
+    tela.blit(tela_de_morte, (0, 0))
     fonte = pygame.font.SysFont('comicsans', 72)
     texto = fonte.render("GAME OVER", True, (255, 0, 0))
-    rect = texto.get_rect(center=(largura // 2, altura // 2))
+    rect = texto.get_rect(center=(largura // 2, altura // 2 + 100))
     tela.blit(texto, rect)
     pygame.display.update()
-    pygame.time.wait(2000)
+    pygame.time.wait(3000)
     pygame.quit()
     sys.exit()
 
@@ -140,7 +167,7 @@ def start():
                     pygame.quit()
                     sys.exit()
 
-        tela.blit(fundoincial, (0, 0))
+        tela.blit(fundo_incial, (0, 0))
 
         sombra_start = fonteMenu.render("Iniciar Game", True, (50, 50, 50))
         startTexto = fonteMenu.render("Iniciar Game", True, branco)
