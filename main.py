@@ -3,11 +3,11 @@ import random
 import math
 import os 
 import sys
+import datetime
 import tkinter as tk
 from Comandos import inicia_bando_dados
 from Comandos import limparTela
 from Comandos import aguarde
-from Comandos import escreverDados
 from tkinter import messagebox
 import json
 
@@ -37,8 +37,12 @@ inimigo_img = pygame.transform.scale(inimigo_img, (inimigo_largura, inimigo_altu
 
 fonteMenu = pygame.font.SysFont('comicsans', 24)
 nome = ""
+pontuacao = 0
 
 def iniciar_jogo():
+    global pontuacao, nome
+    pontuacao = 0
+
     personagem_x = largura // 2 - 50
     personagem_y = altura - 150
     velocidade = 15
@@ -50,6 +54,7 @@ def iniciar_jogo():
 
     inimigo_x = largura // 2 - inimigo_largura // 2
     inimigo_y = 50
+    inimigo_velocidade = 1
 
     rodando = True
     pausado = False 
@@ -89,6 +94,7 @@ def iniciar_jogo():
             projetil_x = random.randint(0, largura - 80)
             projetil_y = -80
             velocidade_projetil += 0.01
+            pontuacao += 10
 
         personagem_rect = pygame.Rect(personagem_x, personagem_y, 100, 100)
         projetil_rect = pygame.Rect(projetil_x + 15, projetil_y + 15, 50, 50)
@@ -96,10 +102,46 @@ def iniciar_jogo():
         if personagem_rect.colliderect(projetil_rect):
             game_over()
 
+        inimigo_x += inimigo_velocidade
+        if inimigo_x <= 0 or inimigo_x >= largura - inimigo_largura:
+            inimigo_velocidade *= -1
+
         tela.blit(fundo_jogo, (0, 0))
         tela.blit(inimigo_img, (inimigo_x, inimigo_y)) 
         tela.blit(personagem_img, (personagem_x, personagem_y)) 
         tela.blit(projetil_img, (projetil_x, projetil_y))
+
+        texto_pontuacao = fonteMenu.render(f"Pontuação: {pontuacao}", True, branco)
+        tela.blit(texto_pontuacao, (largura - texto_pontuacao.get_width() - 10, altura - texto_pontuacao.get_height() - 10))
+
+        tempo = pygame.time.get_ticks() / 1000
+        sol_x, sol_y = largura - 120, 120
+        raio_sol = 60
+
+        for i in range(raio_sol, 0, -1):
+            intensidade = 255 - int((i / raio_sol) * 100)
+            cor = (255, intensidade, 50)
+            pygame.draw.circle(tela, cor, (sol_x, sol_y), i)
+
+        brilho = 220 + int(10 * math.sin(tempo * 2))
+        cor_raio = (255, brilho, 60)
+
+        for i in range(12):
+            angulo = math.radians(i * 30)
+            offset = 5 * math.sin(tempo * 3 + i)
+            comprimento = 30 + offset
+            x1 = sol_x + int((raio_sol - 5) * math.cos(angulo))
+            y1 = sol_y + int((raio_sol - 5) * math.sin(angulo))
+            x2 = sol_x + int((raio_sol + comprimento) * math.cos(angulo))
+            y2 = sol_y + int((raio_sol + comprimento) * math.sin(angulo))
+            pygame.draw.line(tela, cor_raio, (x1, y1), (x2, y2), 2)
+
+        for i in range(6):
+            raio_aura = raio_sol + 20 + i * 10
+            alpha = max(5, 50 - i * 7)
+            aura_surface = pygame.Surface((raio_aura * 2, raio_aura * 2), pygame.SRCALPHA)
+            pygame.draw.circle(aura_surface, (255, 200, 80, alpha), (raio_aura, raio_aura), raio_aura)
+            tela.blit(aura_surface, (sol_x - raio_aura, sol_y - raio_aura))
 
         dica_pause = fonteMenu.render("(press space to pause)", True, (180, 180, 180))
         tela.blit(dica_pause, (10, 10))
@@ -108,15 +150,91 @@ def iniciar_jogo():
         fps.tick(60)
 
 def game_over():
-    tela.blit(tela_de_morte, (0, 0))
-    fonte = pygame.font.SysFont('comicsans', 72)
-    texto = fonte.render("GAME OVER", True, (255, 0, 0))
-    rect = texto.get_rect(center=(largura // 2, altura // 2 + 100))
-    tela.blit(texto, rect)
-    pygame.display.update()
-    pygame.time.wait(3000)
-    pygame.quit()
-    sys.exit()
+    agora = datetime.datetime.now()
+    data_hora = agora.strftime("%d/%m/%Y - (%H:%M:%S)")
+    
+    with open("log.dat", "a") as arquivo:
+        arquivo.write(f"Jogador: {nome} - Pontuação: {pontuacao} - Data/Hora: {data_hora}\n")
+
+    botao_restart = pygame.Rect(largura // 2 - 110, altura // 2 + 50, 220, 50)
+    botao_sair = pygame.Rect(largura // 2 - 110, altura // 2 + 120, 220, 50)
+
+    while True:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif evento.type == pygame.MOUSEBUTTONUP:
+                mouse_pos = pygame.mouse.get_pos()
+                if botao_restart.collidepoint(mouse_pos):
+                    iniciar_jogo()
+                    return
+                elif botao_sair.collidepoint(mouse_pos):
+                    pygame.quit()
+                    sys.exit()
+
+        tela.blit(tela_de_morte, (0, 0))
+
+        fonte_titulo = pygame.font.SysFont('comicsans', 72)
+        texto = fonte_titulo.render("GAME OVER", True, (255, 0, 0))
+        rect = texto.get_rect(center=(largura // 2, altura // 2 - 50))
+        tela.blit(texto, rect)
+
+        pygame.draw.rect(tela, (0, 255, 0), botao_restart)
+        pygame.draw.rect(tela, (255, 0, 0), botao_sair)
+
+        fonte_botao = pygame.font.SysFont('comicsans', 30)
+        texto_restart = fonte_botao.render("Restart Game", True, preto)
+        texto_sair = fonte_botao.render("Quit Game", True, branco)
+
+        tela.blit(texto_restart, (botao_restart.x + 35, botao_restart.y + 10))
+        tela.blit(texto_sair, (botao_sair.x + 50, botao_sair.y + 10))
+
+        fonte_pontuacao = pygame.font.SysFont('comicsans', 32)
+        texto_pontos = fonte_pontuacao.render(f"Pontuação final: {pontuacao}", True, branco)
+        tela.blit(texto_pontos, (largura // 2 - texto_pontos.get_width() // 2, altura // 2 + 190))
+
+        pygame.display.update()
+        fps.tick(60)
+
+def tela_boas_vindas(nome_jogador):
+    rodando = True
+    while rodando:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_RETURN:
+                    rodando = False
+                    iniciar_jogo()
+
+        tela.fill(preto)
+
+        titulo_fonte = pygame.font.SysFont('comicsans', 50)
+        texto_fonte = pygame.font.SysFont('comicsans', 28)
+
+        texto_bem_vindo = titulo_fonte.render(f"BEM-VINDO, {nome_jogador.upper()}!", True, branco)
+        texto_jogo = texto_fonte.render("ESTE JOGO É O: FIGHT IN SPACE", True, branco)
+
+        instrucoes = [
+            "COMANDOS:",
+            "- Use as setas <- -> para mover a nave",
+            "- Desvie dos projéteis que caem do céu",
+            "- Se for atingido, é GAME OVER!",
+            "- Pressione 'Espaço' a qualquer momento para PAUSAR",
+            "- Pressione ENTER para começar o jogo!"
+        ]
+
+        tela.blit(texto_bem_vindo, (largura // 2 - texto_bem_vindo.get_width() // 2, 100))
+        tela.blit(texto_jogo, (largura // 2 - texto_jogo.get_width() // 2, 170))
+
+        for i, linha in enumerate(instrucoes):
+            linha_render = texto_fonte.render(linha, True, branco)
+            tela.blit(linha_render, (100, 250 + i * 40))
+
+        pygame.display.update()
+        fps.tick(60)
 
 def jogar():
     largura_janela = 300
@@ -129,7 +247,7 @@ def jogar():
             messagebox.showwarning("Aviso", "Por favor, digite seu nome!")  
         else:
             root.destroy()
-            iniciar_jogo()
+            tela_boas_vindas(nome)
 
     def ao_fechar_janela():
         messagebox.showwarning("Aviso", "Você precisa digitar um nome para continuar!")
