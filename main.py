@@ -4,6 +4,7 @@ import math
 import os 
 import sys
 import datetime
+import speech_recognition as sr
 import tkinter as tk
 from Comandos import inicia_bando_dados
 from Comandos import limparTela
@@ -18,7 +19,7 @@ largura = 1000
 altura = 700
 fps = pygame.time.Clock()
 tela = pygame.display.set_mode((largura, altura), 0)
-pygame.display.set_caption('Fight in space')
+pygame.display.set_caption('Starfighter Assault')
 
 branco = (255, 255, 255)
 preto = (0, 0, 0)
@@ -150,11 +151,21 @@ def iniciar_jogo():
         fps.tick(60)
 
 def game_over():
+    global nome, pontuacao
     agora = datetime.datetime.now()
     data_hora = agora.strftime("%d/%m/%Y - (%H:%M:%S)")
-    
+
+    novo_registro = f"Jogador: {nome} - Pontuação: {pontuacao} - Data/Hora: {data_hora}\n"
+
     with open("log.dat", "a") as arquivo:
-        arquivo.write(f"Jogador: {nome} - Pontuação: {pontuacao} - Data/Hora: {data_hora}\n")
+        arquivo.write(novo_registro)
+
+    try:
+        with open("log.dat", "r") as arquivo:
+            linhas = arquivo.readlines()
+            ultimos_registros = linhas[-5:]
+    except FileNotFoundError:
+        ultimos_registros = []
 
     botao_restart = pygame.Rect(largura // 2 - 110, altura // 2 + 50, 220, 50)
     botao_sair = pygame.Rect(largura // 2 - 110, altura // 2 + 120, 220, 50)
@@ -193,6 +204,20 @@ def game_over():
         fonte_pontuacao = pygame.font.SysFont('comicsans', 32)
         texto_pontos = fonte_pontuacao.render(f"Pontuação final: {pontuacao}", True, branco)
         tela.blit(texto_pontos, (largura // 2 - texto_pontos.get_width() // 2, altura // 2 + 190))
+
+        fonte_registro = pygame.font.SysFont('comicsans', 20)
+        y_offset = 10 
+
+        titulo_log = fonte_registro.render("Últimas 5 Jogadas:", True, branco)
+        tela.blit(titulo_log, (largura - titulo_log.get_width() - 10, y_offset))
+
+        y_offset += 30
+
+        for registro in reversed(ultimos_registros):
+            registro = registro.strip()
+            texto_log = fonte_registro.render(registro, True, branco)
+            tela.blit(texto_log, (largura - texto_log.get_width() - 10, y_offset))
+            y_offset += 25 
 
         pygame.display.update()
         fps.tick(60)
@@ -237,20 +262,37 @@ def tela_boas_vindas(nome_jogador):
         fps.tick(60)
 
 def jogar():
-    largura_janela = 300
-    altura_janela = 50
+    largura_janela = 400
+    altura_janela = 100
 
     def obter_nome():
         global nome
-        nome = entry_nome.get() 
-        if not nome.strip():  
-            messagebox.showwarning("Aviso", "Por favor, digite seu nome!")  
+        nome = entry_nome.get()
+        if not nome.strip():
+            messagebox.showwarning("Aviso", "Por favor, fale ou digite seu nome!")
         else:
             root.destroy()
             tela_boas_vindas(nome)
 
+    def falar_nome():
+        global nome
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            messagebox.showinfo("Fale agora", "Por favor, fale o seu nickname...")
+            try:
+                audio = recognizer.listen(source, timeout=5)
+                nome_falado = recognizer.recognize_google(audio, language='pt-BR')
+                entry_nome.delete(0, tk.END)
+                entry_nome.insert(0, nome_falado)
+            except sr.UnknownValueError:
+                messagebox.showerror("Erro", "Não entendi o que você falou. Por favor, tente novamente ou digite seu nome.")
+            except sr.RequestError:
+                messagebox.showerror("Erro", "Não foi possível conectar ao serviço de reconhecimento.")
+            except sr.WaitTimeoutError:
+                messagebox.showerror("Erro", "Tempo de espera excedido. Por favor, tente novamente.")
+
     def ao_fechar_janela():
-        messagebox.showwarning("Aviso", "Você precisa digitar um nome para continuar!")
+        messagebox.showwarning("Aviso", "Você precisa falar ou digitar um nome para continuar!")
 
     root = tk.Tk()
     largura_tela = root.winfo_screenwidth()
@@ -258,14 +300,23 @@ def jogar():
     x = (largura_tela - largura_janela) // 2
     y = (altura_tela - altura_janela) // 2
     root.geometry(f"{largura_janela}x{altura_janela}+{x}+{y}")
-    root.title("Digite seu Nickname")
+    root.title("Nickname")
     root.protocol("WM_DELETE_WINDOW", ao_fechar_janela)
+
+    label_instrucao = tk.Label(root, text="Fale ou digite seu nickname:")
+    label_instrucao.pack()
 
     entry_nome = tk.Entry(root)
     entry_nome.pack()
 
-    botao = tk.Button(root, text="OK", command=obter_nome)
-    botao.pack()
+    frame_botoes = tk.Frame(root)
+    frame_botoes.pack()
+
+    botao_falar = tk.Button(frame_botoes, text="Falar", command=falar_nome)
+    botao_falar.pack(side=tk.LEFT, padx=5)
+
+    botao_ok = tk.Button(frame_botoes, text="OK", command=obter_nome)
+    botao_ok.pack(side=tk.LEFT, padx=5)
 
     root.mainloop()
 
