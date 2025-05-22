@@ -5,6 +5,7 @@ import os
 import sys
 import datetime
 import speech_recognition as sr
+import pyttsx3
 import tkinter as tk
 from Comandos import inicia_bando_dados
 from Comandos import limparTela
@@ -23,6 +24,10 @@ pygame.display.set_caption('Starfighter Assault')
 
 branco = (255, 255, 255)
 preto = (0, 0, 0)
+
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)
+engine.setProperty('volume', 1)
 
 fundo_incial = pygame.image.load("recursos/iniciogame.jpg")
 fundo_jogo = pygame.image.load("recursos/Imagemjogo.png")
@@ -170,6 +175,47 @@ def game_over():
     botao_restart = pygame.Rect(largura // 2 - 110, altura // 2 + 50, 220, 50)
     botao_sair = pygame.Rect(largura // 2 - 110, altura // 2 + 120, 220, 50)
 
+    tela.blit(tela_de_morte, (0, 0))
+
+    fonte_titulo = pygame.font.SysFont('comicsans', 72)
+    texto = fonte_titulo.render("GAME OVER", True, (255, 0, 0))
+    rect = texto.get_rect(center=(largura // 2, altura // 2 - 50))
+    tela.blit(texto, rect)
+
+    pygame.draw.rect(tela, (0, 255, 0), botao_restart)
+    pygame.draw.rect(tela, (255, 0, 0), botao_sair)
+
+    fonte_botao = pygame.font.SysFont('comicsans', 30)
+    texto_restart = fonte_botao.render("Restart Game", True, preto)
+    texto_sair = fonte_botao.render("Quit Game", True, branco)
+
+    tela.blit(texto_restart, (botao_restart.x + 35, botao_restart.y + 10))
+    tela.blit(texto_sair, (botao_sair.x + 50, botao_sair.y + 10))
+
+    fonte_pontuacao = pygame.font.SysFont('comicsans', 32)
+    texto_pontos = fonte_pontuacao.render(f"Pontuação final: {pontuacao}", True, branco)
+    tela.blit(texto_pontos, (largura // 2 - texto_pontos.get_width() // 2, altura // 2 + 190))
+
+    fonte_registro = pygame.font.SysFont('comicsans', 20)
+    y_offset = 10
+
+    titulo_log = fonte_registro.render("Últimas 5 Jogadas:", True, branco)
+    tela.blit(titulo_log, (largura - titulo_log.get_width() - 10, y_offset))
+
+    y_offset += 30
+
+    for registro in reversed(ultimos_registros):
+        registro = registro.strip()
+        texto_log = fonte_registro.render(registro, True, branco)
+        tela.blit(texto_log, (largura - texto_log.get_width() - 10, y_offset))
+        y_offset += 25
+
+    pygame.display.update()
+
+    mensagem_falada = f"A pontuação final foi {pontuacao} pontos"
+    engine.say(mensagem_falada)
+    engine.runAndWait()
+
     while True:
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -183,41 +229,6 @@ def game_over():
                 elif botao_sair.collidepoint(mouse_pos):
                     pygame.quit()
                     sys.exit()
-
-        tela.blit(tela_de_morte, (0, 0))
-
-        fonte_titulo = pygame.font.SysFont('comicsans', 72)
-        texto = fonte_titulo.render("GAME OVER", True, (255, 0, 0))
-        rect = texto.get_rect(center=(largura // 2, altura // 2 - 50))
-        tela.blit(texto, rect)
-
-        pygame.draw.rect(tela, (0, 255, 0), botao_restart)
-        pygame.draw.rect(tela, (255, 0, 0), botao_sair)
-
-        fonte_botao = pygame.font.SysFont('comicsans', 30)
-        texto_restart = fonte_botao.render("Restart Game", True, preto)
-        texto_sair = fonte_botao.render("Quit Game", True, branco)
-
-        tela.blit(texto_restart, (botao_restart.x + 35, botao_restart.y + 10))
-        tela.blit(texto_sair, (botao_sair.x + 50, botao_sair.y + 10))
-
-        fonte_pontuacao = pygame.font.SysFont('comicsans', 32)
-        texto_pontos = fonte_pontuacao.render(f"Pontuação final: {pontuacao}", True, branco)
-        tela.blit(texto_pontos, (largura // 2 - texto_pontos.get_width() // 2, altura // 2 + 190))
-
-        fonte_registro = pygame.font.SysFont('comicsans', 20)
-        y_offset = 10 
-
-        titulo_log = fonte_registro.render("Últimas 5 Jogadas:", True, branco)
-        tela.blit(titulo_log, (largura - titulo_log.get_width() - 10, y_offset))
-
-        y_offset += 30
-
-        for registro in reversed(ultimos_registros):
-            registro = registro.strip()
-            texto_log = fonte_registro.render(registro, True, branco)
-            tela.blit(texto_log, (largura - texto_log.get_width() - 10, y_offset))
-            y_offset += 25 
 
         pygame.display.update()
         fps.tick(60)
