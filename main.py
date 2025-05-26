@@ -20,7 +20,12 @@ largura = 1000
 altura = 700
 fps = pygame.time.Clock()
 tela = pygame.display.set_mode((largura, altura), 0)
+
+icone = pygame.image.load("recursos/icone.ico")
+pygame.display.set_icon(icone)
+
 pygame.display.set_caption('Starfighter Assault')
+pygame.mixer.music.load('recursos/Musicagame.mp3')
 
 branco = (255, 255, 255)
 preto = (0, 0, 0)
@@ -48,6 +53,8 @@ pontuacao = 0
 def iniciar_jogo():
     global pontuacao, nome
     pontuacao = 0
+
+    pygame.mixer.music.play(-1)
 
     personagem_x = largura // 2 - 50
     personagem_y = altura - 150
@@ -157,6 +164,8 @@ def iniciar_jogo():
 
 def game_over():
     global nome, pontuacao
+
+    pygame.mixer.music.stop()
     agora = datetime.datetime.now()
     data_hora = agora.strftime("%d/%m/%Y - (%H:%M:%S)")
 
