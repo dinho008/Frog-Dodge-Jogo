@@ -6,3 +6,6 @@ O Starfighter Assault conta a história de um grupo de ladrões intergalácticos
 
 Tecnologia Utilizada:
 A principal tecnologia utilizada foi Python, com a biblioteca Pygame.
+
+Testador do Jogo: Bernardo Celso Flores Guimarães
+RA: 1137965
