@@ -10,6 +10,7 @@ import tkinter as tk
 from Comandos import inicia_bando_dados
 from Comandos import limparTela
 from Comandos import aguarde
+from Comandos import falar_nome
 from tkinter import messagebox
 import json
 
@@ -294,22 +295,11 @@ def jogar():
             root.destroy()
             tela_boas_vindas(nome)
 
-    def falar_nome():
-        global nome
-        recognizer = sr.Recognizer()
-        with sr.Microphone() as source:
-            messagebox.showinfo("Fale agora", "Por favor, fale o seu nickname...")
-            try:
-                audio = recognizer.listen(source, timeout=5)
-                nome_falado = recognizer.recognize_google(audio, language='pt-BR')
-                entry_nome.delete(0, tk.END)
-                entry_nome.insert(0, nome_falado)
-            except sr.UnknownValueError:
-                messagebox.showerror("Erro", "Não entendi o que você falou. Por favor, tente novamente ou digite seu nome.")
-            except sr.RequestError:
-                messagebox.showerror("Erro", "Não foi possível conectar ao serviço de reconhecimento.")
-            except sr.WaitTimeoutError:
-                messagebox.showerror("Erro", "Tempo de espera excedido. Por favor, tente novamente.")
+    def falar_nome_callback():
+        nome_falado = falar_nome()
+        if nome_falado:
+            entry_nome.delete(0, tk.END)
+            entry_nome.insert(0, nome_falado)
 
     def ao_fechar_janela():
         messagebox.showwarning("Aviso", "Você precisa falar ou digitar um nome para continuar!")
@@ -332,7 +322,7 @@ def jogar():
     frame_botoes = tk.Frame(root)
     frame_botoes.pack()
 
-    botao_falar = tk.Button(frame_botoes, text="Falar", command=falar_nome)
+    botao_falar = tk.Button(frame_botoes, text="Falar", command=falar_nome_callback)
     botao_falar.pack(side=tk.LEFT, padx=5)
 
     botao_ok = tk.Button(frame_botoes, text="OK", command=obter_nome)
